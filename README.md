@@ -19,7 +19,7 @@ https://tanveersinghd.github.io/BlockBattle/
 - Exit to menu: Bottom-right Exit button
 
 ## Run
-- Simply open `index.html` in a modern browser. No build step required.
+- Simply open `index.html` in a browser. No build step required.
 
 ## Files of interest
 - `src/main.js` – game loop, input, upgrades, and orchestration.
