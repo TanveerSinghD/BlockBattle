@@ -1,0 +1,568 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Block Battle</title>
+  <style>
+    :root {
+      --bg: #f2ebdf;
+      --panel: #ffffff;
+      --accent: #2b8df8;
+      --accent-2: #f7b733;
+      --ink: #0f1a2c;
+      --muted: #6b7a8f;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Trebuchet MS", "Segoe UI", Tahoma, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      overflow: hidden;
+    }
+    #game {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+      outline: none;
+      background: transparent;
+    }
+    .hud {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      pointer-events: none;
+      padding: 12px 16px;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .panel {
+      background: rgba(255, 255, 255, 0.92);
+      border: 1px solid rgba(0, 0, 0, 0.05);
+      border-radius: 12px;
+      padding: 10px 14px;
+      box-shadow: 0 18px 60px rgba(0, 0, 0, 0.35);
+      min-width: 220px;
+    }
+    .panel h1 {
+      margin: 0 0 6px;
+      font-size: 16px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+    .panel p {
+      margin: 2px 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+    .panel strong { color: var(--ink); }
+    .xp-bar {
+      position: fixed;
+      left: 50%;
+      transform: translateX(-50%);
+      top: 14px;
+      width: clamp(240px, 40vw, 520px);
+      height: 14px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .xp-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #4ad7d1, #7cf29c);
+      box-shadow: 0 0 12px rgba(74, 215, 209, 0.6);
+    }
+    .xp-label {
+      position: absolute;
+      width: 100%;
+      text-align: center;
+      font-size: 11px;
+      color: var(--ink);
+      top: -16px;
+      letter-spacing: 0.08em;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: rgba(0, 0, 0, 0.04);
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .upgrade-hud {
+      position: fixed;
+      left: 16px;
+      bottom: 16px;
+      display: grid;
+      gap: 8px;
+      pointer-events: none;
+      max-width: 320px;
+    }
+    .upgrade-item {
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      align-items: center;
+      gap: 10px;
+      background: rgba(255, 255, 255, 0.92);
+      border: 1px solid rgba(0, 0, 0, 0.06);
+      border-radius: 14px;
+      padding: 8px 12px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+    }
+    .upgrade-hud.ready .upgrade-item {
+      box-shadow: 0 10px 24px rgba(43, 141, 248, 0.22);
+    }
+    .upgrade-name {
+      font-weight: 700;
+      color: var(--ink);
+      font-size: 13px;
+    }
+    .upgrade-bar {
+      position: relative;
+      width: 100%;
+      height: 8px;
+      background: rgba(0, 0, 0, 0.06);
+      border-radius: 8px;
+      overflow: hidden;
+      margin-top: 6px;
+    }
+    .upgrade-bar span {
+      display: block;
+      height: 100%;
+      width: 12%;
+      background: var(--accent);
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.08) inset;
+    }
+    .upgrade-key {
+      font-size: 12px;
+      color: var(--muted);
+      padding: 4px 8px;
+      border-radius: 8px;
+      background: rgba(0, 0, 0, 0.04);
+    }
+    .upgrade-level {
+      font-weight: 700;
+      color: var(--ink);
+      font-size: 12px;
+      padding: 4px 8px;
+      border-radius: 8px;
+      background: rgba(0, 0, 0, 0.04);
+    }
+    .cooldown-bar {
+      position: fixed;
+      top: 36px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: clamp(220px, 32vw, 360px);
+      height: 10px;
+      background: rgba(0, 0, 0, 0.06);
+      border-radius: 10px;
+      border: 1px solid rgba(0, 0, 0, 0.05);
+      overflow: hidden;
+      display: none;
+    }
+    .cooldown-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #f7b733, #ff6b6b);
+      box-shadow: 0 0 12px rgba(247, 183, 51, 0.4);
+    }
+    .cooldown-label {
+      position: absolute;
+      top: -16px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .admin-panel {
+      position: fixed;
+      right: 16px;
+      top: 260px;
+      width: min(260px, 36vw);
+      background: rgba(255, 255, 255, 0.95);
+      border: 1px solid rgba(0, 0, 0, 0.06);
+      border-radius: 16px;
+      padding: 12px 14px;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.2);
+      display: grid;
+      gap: 10px;
+      pointer-events: auto;
+      z-index: 12;
+      transition: transform 0.2s ease, opacity 0.2s ease;
+    }
+    .admin-panel.collapsed {
+      transform: translateX(120%);
+      opacity: 0;
+      pointer-events: none;
+    }
+    .admin-panel h2 {
+      margin: 0;
+      font-size: 15px;
+      letter-spacing: 0.05em;
+      color: var(--ink);
+    }
+    .admin-row {
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      gap: 8px;
+      align-items: center;
+      background: rgba(0, 0, 0, 0.03);
+      padding: 8px 10px;
+      border-radius: 12px;
+      border: 1px solid rgba(0, 0, 0, 0.04);
+    }
+    .admin-row .name {
+      font-weight: 700;
+      color: var(--ink);
+    }
+    .admin-row button {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 6px 10px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 8px 18px rgba(43, 141, 248, 0.22);
+    }
+    .admin-toggle {
+      position: fixed;
+      right: 16px;
+      top: 220px;
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 10px 18px rgba(43, 141, 248, 0.28);
+      z-index: 13;
+      font-weight: 900;
+    }
+    .exit-btn {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      padding: 12px 16px;
+      border-radius: 12px;
+      border: none;
+      background: #f66;
+      color: #fff;
+      font-weight: 700;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.18);
+      cursor: pointer;
+      transition: transform 0.1s ease, box-shadow 0.1s ease;
+      z-index: 8;
+    }
+    .exit-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 16px 36px rgba(0,0,0,0.22);
+    }
+    .weapon-popup {
+      position: fixed;
+      right: 16px;
+      bottom: 16px;
+      width: min(320px, 70vw);
+      background: rgba(255, 255, 255, 0.95);
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      border-radius: 14px;
+      padding: 14px;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
+      pointer-events: auto;
+      transition: transform 0.2s ease, opacity 0.2s ease;
+      color: var(--ink);
+    }
+    .weapon-popup.hidden {
+      opacity: 0;
+      transform: translateY(10px);
+      pointer-events: none;
+    }
+    .weapon-popup h2 {
+      margin: 0 0 4px;
+      font-size: 16px;
+      letter-spacing: 0.03em;
+    }
+    .weapon-popup p {
+      margin: 0 0 10px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .weapon-option {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 12px;
+      background: rgba(0, 0, 0, 0.04);
+      border-radius: 12px;
+      border: 1px solid rgba(0, 0, 0, 0.05);
+      margin-top: 8px;
+    }
+    .weapon-option button {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 8px 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.12s ease, box-shadow 0.12s ease;
+    }
+    .weapon-option button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 10px 18px rgba(43, 141, 248, 0.32);
+    }
+    .start-menu {
+      position: fixed;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      background: rgba(0, 0, 0, 0.25);
+      backdrop-filter: blur(6px);
+      z-index: 20;
+      transition: opacity 0.2s ease, visibility 0.2s ease;
+    }
+    .start-menu.hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+    .start-card {
+      background: rgba(255, 255, 255, 0.95);
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      border-radius: 18px;
+      padding: 20px 24px;
+      width: min(420px, 90vw);
+      box-shadow: 0 24px 50px rgba(0, 0, 0, 0.25);
+      color: var(--ink);
+    }
+    .start-card h1 {
+      margin: 0 0 6px;
+      letter-spacing: 0.06em;
+      font-size: 18px;
+    }
+    .start-card p {
+      margin: 0 0 14px;
+      color: var(--muted);
+    }
+    .difficulty-list {
+      display: grid;
+      gap: 10px;
+      margin: 14px 0;
+    }
+    .difficulty {
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1px solid rgba(0, 0, 0, 0.06);
+      background: rgba(0, 0, 0, 0.035);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: transform 0.12s ease, box-shadow 0.12s ease, border 0.12s ease;
+    }
+    .difficulty.active {
+      border-color: var(--accent);
+      box-shadow: 0 10px 24px rgba(43, 141, 248, 0.28);
+      transform: translateY(-1px);
+    }
+    .difficulty span {
+      display: block;
+    }
+    .start-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 8px;
+    }
+    .start-actions button {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      padding: 10px 14px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 12px 24px rgba(43, 141, 248, 0.25);
+    }
+    .class-list {
+      display: grid;
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .class-card {
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1px solid rgba(0, 0, 0, 0.06);
+      background: rgba(0, 0, 0, 0.03);
+      cursor: pointer;
+      transition: transform 0.12s ease, box-shadow 0.12s ease, border 0.12s ease;
+    }
+    .class-card.active {
+      border-color: var(--accent);
+      box-shadow: 0 10px 24px rgba(43, 141, 248, 0.28);
+      transform: translateY(-1px);
+    }
+    .class-card h3 {
+      margin: 0 0 4px;
+      font-size: 14px;
+      color: var(--ink);
+      letter-spacing: 0.04em;
+    }
+    .class-card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .auto-btn {
+      pointer-events: auto;
+      background: rgba(0, 0, 0, 0.04);
+      border: 1px solid rgba(0, 0, 0, 0.06);
+      color: var(--ink);
+      border-radius: 10px;
+      padding: 8px 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+    }
+    .auto-btn.active {
+      background: var(--accent);
+      color: #fff;
+      box-shadow: 0 10px 22px rgba(43, 141, 248, 0.25);
+      transform: translateY(-1px);
+    }
+  </style>
+</head>
+<body>
+  <canvas id="game" aria-label="Block Battle canvas"></canvas>
+  <div class="hud">
+    <div class="panel">
+      <h1>Controls</h1>
+      <p><strong>Move</strong> – WASD / Arrow Keys</p>
+      <p><strong>Aim</strong> – Mouse</p>
+      <p><strong>Shoot</strong> – Hold Left Click</p>
+      <p><strong>Upgrades</strong> – Press keys 1-5 when you have points</p>
+    </div>
+    <div class="panel">
+      <h1>Status</h1>
+      <p><span class="badge">Level</span> <strong id="levelLabel">1</strong></p>
+      <p><span class="badge">HP</span> <strong id="hpLabel">100</strong></p>
+      <p><span class="badge">Build</span> <strong id="buildLabel">Single Barrel</strong></p>
+      <button class="auto-btn" id="autoButton" type="button">Auto Shoot: Off</button>
+    </div>
+  </div>
+  <div class="xp-bar">
+    <div class="xp-label" id="xpLabel">XP</div>
+    <div class="xp-fill" id="xpFill"></div>
+  </div>
+  <div class="cooldown-bar" id="cooldownBar">
+    <div class="cooldown-label" id="cooldownLabel">Power-up Cooldown</div>
+    <div class="cooldown-fill" id="cooldownFill"></div>
+  </div>
+  <div class="upgrade-hud" id="upgradeHud" aria-label="Upgrade levels"></div>
+  <div class="weapon-popup hidden" id="weaponPopup" aria-live="polite"></div>
+  <button id="exitButton" class="exit-btn" type="button" aria-label="Exit to menu">Exit</button>
+  <button class="admin-toggle" id="adminToggle" aria-label="Toggle admin panel" title="Toggle admin panel">»</button>
+  <div class="admin-panel" id="adminPanel" aria-label="Admin controls">
+    <h2>Admin Boosts</h2>
+    <div class="admin-row">
+      <span class="name">Damage</span>
+      <button data-upgrade="1" data-amount="1" type="button">+1</button>
+      <button data-upgrade="1" data-amount="5" type="button">+5</button>
+    </div>
+    <div class="admin-row">
+      <span class="name">Reload</span>
+      <button data-upgrade="2" data-amount="1" type="button">+1</button>
+      <button data-upgrade="2" data-amount="5" type="button">+5</button>
+    </div>
+    <div class="admin-row">
+      <span class="name">Mobility</span>
+      <button data-upgrade="3" data-amount="1" type="button">+1</button>
+      <button data-upgrade="3" data-amount="5" type="button">+5</button>
+    </div>
+    <div class="admin-row">
+      <span class="name">Defense</span>
+      <button data-upgrade="4" data-amount="1" type="button">+1</button>
+      <button data-upgrade="4" data-amount="5" type="button">+5</button>
+    </div>
+    <div class="admin-row" id="adminBulletRow">
+      <span class="name">Bullet Speed</span>
+      <button data-upgrade="5" data-amount="1" type="button">+1</button>
+      <button data-upgrade="5" data-amount="5" type="button">+5</button>
+    </div>
+    <div class="admin-row">
+      <span class="name">Regen Speed</span>
+      <button data-upgrade="6" data-amount="1" type="button">+1</button>
+      <button data-upgrade="6" data-amount="5" type="button">+5</button>
+    </div>
+    <div class="admin-row">
+      <span class="name">XP Boost</span>
+      <button data-xpboost="1" type="button">x1</button>
+      <button data-xpboost="100" type="button">x100</button>
+    </div>
+  </div>
+  <div class="start-menu" id="startMenu" aria-modal="true" role="dialog">
+    <div class="start-card">
+      <h1>Block Battle</h1>
+      <p>Select a difficulty and start your run.</p>
+      <div class="difficulty-list" id="difficultyList">
+        <div class="difficulty active" data-difficulty="easy">
+          <span>Easy — small map</span>
+          <span>Level gently</span>
+        </div>
+        <div class="difficulty" data-difficulty="medium">
+          <span>Medium — bigger map</span>
+          <span>Keep moving</span>
+        </div>
+        <div class="difficulty" data-difficulty="hard">
+          <span>Hard — huge map</span>
+          <span>Good luck</span>
+        </div>
+      </div>
+      <p style="margin:12px 0 4px; color: var(--muted); font-size:12px; text-transform: uppercase; letter-spacing: 0.08em;">Choose Class</p>
+      <div class="class-list" id="classList">
+        <div class="class-card active" data-class="assault">
+          <h3>Assault</h3>
+          <p>Wide cones and storms for close fights.</p>
+        </div>
+        <div class="class-card" data-class="sniper">
+          <h3>Sniper</h3>
+          <p>Rails and lances that melt big targets.</p>
+        </div>
+        <div class="class-card" data-class="spread">
+          <h3>Spread</h3>
+          <p>Balanced barrels and sustained fire.</p>
+        </div>
+        <div class="class-card" data-class="bruiser">
+          <h3>Bruiser</h3>
+          <p>Heavy cannons and tanky volleys.</p>
+        </div>
+        <div class="class-card" data-class="flamethrower">
+          <h3>Flamethrower</h3>
+          <p>Short-range fire streams; extend range with upgrades.</p>
+        </div>
+      </div>
+      <div class="start-actions">
+        <button id="startButton">Start</button>
+      </div>
+    </div>
+  </div>
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
