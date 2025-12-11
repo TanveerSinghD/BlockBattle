@@ -2,6 +2,9 @@
 
 Arcade-style browser tank arena inspired by Diep.io. Pick a class, level up, and blast blocks/bots to unlock new cannons and passives.
 
+## Play game on the web
+https://tanveersinghd.github.io/BlockBattle/
+
 ## Features
 - Difficulty & class selection with class-specific weapon trees (assault, spread, sniper, bruiser, flamethrower).
 - Bots that level up offscreen to stay competitive and visibly mirror their unlocked cannons.
